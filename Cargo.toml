@@ -34,5 +34,5 @@ ordered-float = { version = ">=3.9.1", features = ["serde", "rand"] }
 num-traits = "0.2"
 
 [features]
-default = ["bundled"]
+default = []
 bundled = ["sdl2/bundled"]

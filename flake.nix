@@ -1,51 +1,77 @@
 {
-  description = "Flake for gym-rs";
+  description = "Rust Rover environment";
 
   inputs = {
-    nixpks.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = {
-    nixpkgs,
-    rust-overlay,
-    flake-utils,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        overlays = [(import rust-overlay)];
+  outputs = { self, nixpkgs, rust-overlay, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
         pkgs = import nixpkgs {
-          inherit system overlays;
+          inherit system;
+          config.allowUnfree = true;
+          # config.cudaSupport = true;
+          overlays = [ (import rust-overlay) ];
         };
-        rust = (
-          pkgs.rust-bin.stable."1.82.0".default.override {
-            extensions = [
-              "rust-src"
-              "rust-analyzer"
-            ];
-            targets = ["x86_64-unknown-linux-gnu"];
-          }
-        );
-      in
-        with pkgs; {
-          devShells.default = mkShell {
-            buildInputs = [
-              # System dependencies
-              cmake     # Required by `SDL2`
-              SDL2_gfx  # Used in tests
 
-              # Rust toolchain
-              # Nightly rustfmt because some rules are not supported in stable.
-              (lib.hiPrio rust-bin.nightly."2024-09-01".rustfmt)
-              rust
+        rustToolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+          extensions = [ "rust-src" "clippy" "rustfmt" "rust-analyzer" ];
+        });
+      in {
+        devShell = pkgs.mkShell rec {
+          nativeBuildInputs = with pkgs; [
+            cmake
+            pkg-config
+            rustToolchain
+            jetbrains.rust-rover
+            linuxPackages_latest.perf
+            vulkan-tools
+          ];
 
-              # Tooling
-              taplo     # Formats `Cargo.toml`
-              alejandra # Formats nix files.
-            ];
-          };
-        }
+          buildInputs = with pkgs; [
+            SDL2
+            SDL2_gfx
+            vulkan-loader
+            libGL
+            libxkbcommon
+            wayland
+
+            # cudaPackages.cudatoolkit
+            # cudaPackages.cuda_cudart
+            # cudaPackages.cuda_cupti
+            # cudaPackages.cuda_nvrtc
+            # cudaPackages.cuda_nvtx
+            # cudaPackages.cudnn
+            # cudaPackages.libcublas
+            # cudaPackages.libcufft
+            # cudaPackages.libcurand
+            # cudaPackages.libcusolver
+            # cudaPackages.libcusparse
+            # cudaPackages.libnvjitlink
+            # cudaPackages.nccl
+            # cudaPackages.nsight_systems
+          ];
+
+          shellHook = ''
+            mkdir -p ~/.rust-rover/toolchain
+
+            ln -sfn ${rustToolchain}/lib ~/.rust-rover/toolchain
+            ln -sfn ${rustToolchain}/bin ~/.rust-rover/toolchain
+
+            export LD_LIBRARY_PATH=/run/opengl-driver/lib:${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH
+            export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
+            export RUST_SRC_PATH="$HOME/.rust-rover/toolchain/lib/rustlib/src/rust/library"
+            export RUST_BACKTRACE=full
+            export EZ_LOG=trace
+            zsh
+          '';
+        };
+      }
     );
 }

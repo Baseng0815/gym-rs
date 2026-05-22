@@ -1,21 +1,23 @@
 procs:
   cargo-check:
-    shell: "cargo check"
+    shell: "cargo check --no-default-features"
   cargo-test:
-    shell: "cargo test"
+    shell: "cargo test --no-default-features"
   cargo-bench:
-    shell: "cargo bench"
+    shell: "cargo bench --no-default-features"
   cargo-fmt:
     shell: "cargo fmt"
   cargo-clippy:
-    shell: "cargo clippy"
+    shell: "cargo clippy --no-default-features"
   cargo-doc:
-    shell: "cargo doc"
+    shell: "cargo doc --no-default-features"
   taplo:
     shell: "taplo fmt"
   semver-checks:
     shell: "cargo semver-checks"
   cartpole:
-    shell: "cargo run --example cartpole"
+    shell: "cargo run --no-default-features --example cartpole"
   mountain_car:
-    shell: "cargo run --example mountain_car"
+    shell: "cargo run --no-default-features --example mountain_car"
+  double_pendulum:
+    shell: "cargo run --no-default-features --example double_pendulum"

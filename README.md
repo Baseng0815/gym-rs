@@ -65,15 +65,23 @@ x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
 
 ## Examples
 
+When a system SDL2 is available (e.g. via `nix develop`), pass
+`--no-default-features` to link against it instead of compiling the bundled
+SDL2 from source.
+
 ```bash
-cargo run --example=cartpole
+cargo run --no-default-features --example=cartpole
 ```
 ![cart_pole](assets/cartpole.png)
 
 ```bash
-cargo run --example=mountain_car
+cargo run --no-default-features --example=mountain_car
 ```
 ![mountain_car](assets/mountain_car.png)
+
+```bash
+cargo run --no-default-features --example=double_pendulum
+```
 
 
 ## Contributions

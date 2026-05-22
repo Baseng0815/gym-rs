@@ -1,12 +1,11 @@
 use derivative::Derivative;
 use derive_new::new;
 use sdl2::{
-    event::Event,
     gfx::framerate::FPSManager,
     pixels::PixelFormatEnum,
     rect::{Point, Rect},
     render::WindowCanvas,
-    EventPump,
+    sys, EventPump,
 };
 use serde::Serialize;
 
@@ -161,12 +160,30 @@ impl Screen {
     }
 
     /// Processes all events found in the queue.
+    ///
+    /// This deliberately avoids [`EventPump::poll_iter`], which decodes every
+    /// event into [`sdl2::event::Event`] and panics on event types unknown to
+    /// the `sdl2` crate (newer SDL runtimes emit such types, e.g. `0x207`).
+    /// Instead the OS event queue is pumped directly to keep the window
+    /// responsive, the quit event is detected without decoding, and the queue
+    /// is flushed.
     pub fn consume_events(&mut self) {
         if let Some(ScreenGui { event_pump, .. }) = self.gui.as_mut() {
-            for event in event_pump.poll_iter() {
-                if let Event::Quit { .. } = event {
-                    panic!("Animation was forced to exit.")
-                }
+            event_pump.pump_events();
+
+            let quit_requested = unsafe {
+                sys::SDL_HasEvent(sys::SDL_EventType::SDL_QUIT as u32) == sys::SDL_bool::SDL_TRUE
+            };
+
+            unsafe {
+                sys::SDL_FlushEvents(
+                    sys::SDL_EventType::SDL_FIRSTEVENT as u32,
+                    sys::SDL_EventType::SDL_LASTEVENT as u32,
+                );
+            }
+
+            if quit_requested {
+                panic!("Animation was forced to exit.")
             }
         }
     }

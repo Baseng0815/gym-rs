@@ -67,8 +67,6 @@
             export LD_LIBRARY_PATH=/run/opengl-driver/lib:${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH
             export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
             export RUST_SRC_PATH="$HOME/.rust-rover/toolchain/lib/rustlib/src/rust/library"
-            export RUST_BACKTRACE=full
-            export EZ_LOG=trace
             zsh
           '';
         };
